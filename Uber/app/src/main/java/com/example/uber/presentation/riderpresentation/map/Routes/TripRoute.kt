@@ -7,7 +7,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.location.Location
 import android.util.DisplayMetrics
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.RelativeLayout
@@ -17,11 +16,9 @@ import androidx.lifecycle.lifecycleScope
 import com.example.uber.R
 import com.example.uber.core.utils.BitMapCreator
 import com.example.uber.core.utils.HRMarkerAnimation
-import com.example.uber.core.utils.Helper
 import com.example.uber.core.utils.PolyUtilExtension
 import com.example.uber.data.remote.api.backend.rider.socket.ride.model.TripLocation
 import com.example.uber.presentation.riderpresentation.map.viewmodels.RideViewModel
-import com.example.uber.presentation.riderpresentation.viewModels.GoogleViewModel
 import com.example.uber.presentation.riderpresentation.viewModels.LocationViewModel
 import com.example.uber.presentation.riderpresentation.viewModels.TripViewModel
 import com.google.android.gms.maps.GoogleMap
@@ -33,11 +30,9 @@ import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.maps.android.PolyUtil
 import dagger.hilt.android.internal.managers.ViewComponentManager
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.lang.ref.WeakReference
 
 class TripRoute(
@@ -53,15 +48,21 @@ class TripRoute(
     private var mLastLocation: Location? = null
     private var riderPickUpLocation: LatLng? = null
     private var polylineOptions: PolylineOptions? = null
+
+    init {
+        observeDirectionsResponse()
+        observeTripUpdates()
+        observeTripStarted()
+        startObservingTripUpdates()
+    }
+
     fun createRoute(
         pickUpLocation: LatLng,
-        driverInitialLocation: LatLng,
+        driverInitialLocation: LatLng
     ) {
         riderPickUpLocation = pickUpLocation
         tripViewModel.directionsRequest(pickUpLocation, driverInitialLocation)
-        observeDirectionsResponse()
-        observeTripUpdates()
-        startObservingTripUpdates()
+
         addMarker(driverInitialLocation)
     }
 
@@ -69,35 +70,34 @@ class TripRoute(
         tripViewModel?.run {
             viewLifecycleOwner.lifecycleScope.launch {
                 directions.collectLatest {
-                    if (it?.data!!.routes.isNotEmpty()) {
-                        createRoute(it.data!!.routes[0].overview_polyline!!.points)
+                    it?.data?.let { a ->
+                        if (a.routes.isNotEmpty()) {
+                            createRoute(a.routes[0].overview_polyline.points)
+                        }
                     }
                 }
-
             }
         }
     }
 
     private var routePoints: List<LatLng>? = null
-    private var polyline:Polyline? = null
+    private var polyline: Polyline? = null
 
     private fun createRoute(line: String) {
         val routePoints: List<LatLng> = PolyUtil.decode(line)
         if (routePoints.size > 1) {
             this.routePoints = routePoints
             polyline?.remove()
-            if (polylineOptions == null) {
-                polylineOptions = PolylineOptions()
-                    .width(5f)
-                    .color(Color.BLUE)
+            polylineOptions = PolylineOptions()
+                .width(5f)
+                .color(Color.BLUE)
 
-                polylineOptions?.let {
-                    it.addAll(routePoints)
-                    polyline = googleMap.get()?.addPolyline(it)
-                }
-                pickUpMarker()
-                addAnnotation()
+            polylineOptions?.let {
+                it.addAll(routePoints)
+                polyline = googleMap.get()?.addPolyline(it)
             }
+            pickUpMarker()
+            addAnnotation()
         }
     }
 
@@ -134,7 +134,7 @@ class TripRoute(
                     }
                     animateMarker()
                     checkIfDriverLocationOnRoute(a)
-                    removeTravelledPolyLine()
+//                    removeTravelledPolyLine()
                 }
             }
         }
@@ -148,7 +148,7 @@ class TripRoute(
 
     private fun checkIfDriverLocationOnRoute(trip: TripLocation) {
 
-        if (routePoints!= null && !PolyUtil.isLocationOnPath(
+        if (routePoints != null && !PolyUtil.isLocationOnPath(
                 LatLng(trip.latitude, trip.longitude),
                 routePoints,
                 true,
@@ -156,26 +156,31 @@ class TripRoute(
             )
         ) {
             tripViewModel.directionsRequest(
+                LatLng(trip.latitude, trip.longitude),
                 riderPickUpLocation!!,
-                LatLng(trip.latitude, trip.longitude)
             )
         }
     }
 
     private fun removeTravelledPolyLine() {
         routePoints?.let {
-            mLastLocation?.let {a->
-                val (index,closestPoint) = PolyUtilExtension.getNearestPointOnRoute(LatLng(a.latitude,a.longitude),it)
-                val trimmedPoints= routePoints?.subList(0,index)
+            mLastLocation?.let { a ->
+                val (index, closestPoint) = PolyUtilExtension.getNearestPointOnRoute(
+                    LatLng(
+                        a.latitude,
+                        a.longitude
+                    ), it
+                )
+                val trimmedPoints = routePoints?.subList(0, index)
 
-                trimmedPoints?.let {b->
+                trimmedPoints?.let { b ->
                     polyline?.points = b
                 }
             }
         }
     }
 
-    fun clear(){
+    fun clear() {
         polylineOptions = null
         polyline = null
         mLastLocation = null
@@ -183,14 +188,15 @@ class TripRoute(
         driverMarker = null
     }
 
-    private fun addAnnotation(){
+    private fun addAnnotation() {
         val marker_view: View =
             (context.get()
                 ?.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater).inflate(
                 R.layout.custom_marker,
                 null
             )
-       val addressSrc =  marker_view.findViewById<View>(com.example.uber.R.id.addressTxt) as TextView
+        val addressSrc =
+            marker_view.findViewById<View>(com.example.uber.R.id.addressTxt) as TextView
         addressSrc.text = "Pickup Spot"
 
         riderPickUpLocation?.let {
@@ -209,11 +215,9 @@ class TripRoute(
                     )
                 )
             ).anchor(0.00f, 0.20f);
-           googleMap.get()?.addMarker(marker_opt_source);
+            googleMap.get()?.addMarker(marker_opt_source);
         }
     }
-
-
 
 
     private fun createDrawableFromView(context: Context, view: View): Bitmap {
@@ -248,12 +252,29 @@ class TripRoute(
                             it.longitude
                         )
                     )
-                    .icon(BitMapCreator.bitmapDescriptorFromVector(context.get()!!, R.drawable.circle))
+                    .icon(
+                        BitMapCreator.bitmapDescriptorFromVector(
+                            context.get()!!,
+                            R.drawable.circle
+                        )
+                    )
             )
         }
 
     }
 
+    private fun observeTripStarted() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            tripViewModel.tripStarted().collectLatest {
+                it.let {
+                    if (tripViewModel.pickUp != null && tripViewModel.dropOff != null) {
+                        createRoute(tripViewModel.pickUp!!, tripViewModel.dropOff!!)
+                    }
+                }
+
+            }
+        }
+    }
 
 
 }

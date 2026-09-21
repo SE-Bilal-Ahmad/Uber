@@ -29,7 +29,7 @@ class RideRepository @Inject constructor(private val socketManager: SocketBroker
                 it.on(
                     SocketMethods.RIDE_ACCEPTED,
                     { riderId: String, driverId: String, rideId: String, latitude: Double, longitude: Double ->
-                        CoroutineScope(Dispatchers.IO).launch {
+                        socketScope.launch {
                             rideAccepted.emit(
                                 RideAccepted(
                                     UUID.fromString(riderId),

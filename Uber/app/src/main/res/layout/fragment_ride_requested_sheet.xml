@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:paddingVertical="@dimen/_30sdp"
+    android:paddingVertical="@dimen/_10sdp"
     android:paddingHorizontal="@dimen/_20sdp"
     tools:context=".presentation.riderpresentation.bottomSheet.RideRequestedSheet">
 
@@ -13,55 +13,51 @@
         android:layout_height="wrap_content"
         android:textStyle="bold"
         android:textSize="@dimen/_12ssp"
-        android:gravity="center_horizontal"
+        android:layout_gravity="center"
+        android:layout_marginBottom="@dimen/_10sdp"
         android:textColor="@color/black"
         android:text="Ride requested, locating your driver" />
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:orientation="vertical"
-        android:layout_marginTop="@dimen/_20sdp"
-        android:layout_height="wrap_content">
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/black"
-            android:layout_gravity="center_horizontal"
-            android:text="Ride Details"
-            android:textSize="@dimen/_10ssp"
-            android:textStyle="bold"/>
-    </LinearLayout>
 
     <LinearLayout
-        android:layout_marginTop="@dimen/_30sdp"
+
         android:layout_width="match_parent"
         android:orientation="horizontal"
         android:weightSum="4"
         android:layout_height="wrap_content">
         <View
+            android:id="@+id/v1"
             android:layout_width="wrap_content"
             android:layout_weight="1"
             android:background="@color/grey"
             android:layout_marginEnd="@dimen/_10sdp"
             android:layout_height="@dimen/_5sdp"/>
         <View
+            android:id="@+id/v2"
             android:layout_width="wrap_content"
             android:background="@color/grey"
             android:layout_weight="1"
             android:layout_marginEnd="@dimen/_10sdp"
             android:layout_height="@dimen/_5sdp"/>
         <View
+            android:id="@+id/v3"
             android:layout_width="wrap_content"
             android:background="@color/grey"
             android:layout_weight="1"
             android:layout_marginEnd="@dimen/_10sdp"
             android:layout_height="@dimen/_5sdp"/>
         <View
+            android:id="@+id/v4"
             android:layout_width="wrap_content"
             android:layout_weight="1"
             android:background="@color/grey"
             android:layout_marginEnd="@dimen/_10sdp"
             android:layout_height="@dimen/_5sdp"/>
     </LinearLayout>
-
+    <ImageView
+        android:id="@+id/iv_ride_request_image"
+        android:layout_gravity="center"
+        android:layout_width="@dimen/_200sdp"
+        android:layout_height="@dimen/_150sdp"
+        android:src="@drawable/undraw_destination_fkst"/>
 </LinearLayout>

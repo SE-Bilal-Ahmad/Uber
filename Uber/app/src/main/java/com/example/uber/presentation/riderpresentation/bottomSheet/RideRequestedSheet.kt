@@ -1,15 +1,21 @@
 package com.example.uber.presentation.riderpresentation.bottomSheet
 
+import android.graphics.Color
 import android.os.Bundle
-import android.util.Log
-import androidx.fragment.app.Fragment
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.activity.addCallback
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.example.uber.R
 import com.example.uber.core.enums.SheetState
 import com.example.uber.core.utils.Helper
@@ -19,13 +25,28 @@ import com.example.uber.presentation.riderpresentation.map.viewmodels.RideViewMo
 import com.example.uber.presentation.riderpresentation.viewModels.MapAndSheetsSharedViewModel
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.button.MaterialButton
+import kotlinx.coroutines.launch
+import java.util.Timer
+import java.util.TimerTask
+
 
 class RideRequestedSheet : Fragment(R.layout.fragment_ride_requested_sheet) {
     private val sharedViewModel: MapAndSheetsSharedViewModel by activityViewModels<MapAndSheetsSharedViewModel>()
     private var bottomSheet: LinearLayout? = null
     private var bottomSheetBehavior: BottomSheetBehavior<View>? = null
     private val rideViewModel: RideViewModel by activityViewModels<RideViewModel>()
-    private var binding:FragmentRideRequestedSheetBinding? = null
+    private var binding: FragmentRideRequestedSheetBinding? = null
+
+    val images = mutableListOf(
+        R.drawable.undraw_delivery_location_um5t,
+        R.drawable.undraw_destination_fkst,
+        R.drawable.undraw_my_location_dcug,
+        R.drawable.undraw_order_ride_4gaq
+    )
+
+    val views = mutableListOf(binding?.v1, binding?.v2, binding?.v3, binding?.v4)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
     }
@@ -35,7 +56,7 @@ class RideRequestedSheet : Fragment(R.layout.fragment_ride_requested_sheet) {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        binding = FragmentRideRequestedSheetBinding.inflate(inflater,container,false)
+        binding = FragmentRideRequestedSheetBinding.inflate(inflater, container, false)
         return binding?.root
     }
 
@@ -45,6 +66,7 @@ class RideRequestedSheet : Fragment(R.layout.fragment_ride_requested_sheet) {
         setBottomSheetStyle()
         handleBackPressed()
         rideViewModel.startObservingRideRequestAccepted()
+        setInterval()
     }
 
     private fun handleBackPressed() {
@@ -55,6 +77,7 @@ class RideRequestedSheet : Fragment(R.layout.fragment_ride_requested_sheet) {
                 .popBackStack()
         }
     }
+
     private var bounds: LatLngBounds? = null
     private fun setBottomSheetStyle() {
         bottomSheet = requireActivity().findViewById<LinearLayout>(R.id.bottomSheet)
@@ -65,9 +88,14 @@ class RideRequestedSheet : Fragment(R.layout.fragment_ride_requested_sheet) {
         bottomSheetBehavior?.state = BottomSheetBehavior.STATE_EXPANDED
         bottomSheetBehavior?.isHideable = false
         bottomSheetBehavior?.isDraggable = false
-        adjustMapForBottomSheet(Helper.calculateSheetOffSet((bottomSheet!!.parent as View).height,bottomSheetBehavior!!.peekHeight,bottomSheet!!.top))
+        adjustMapForBottomSheet(
+            Helper.calculateSheetOffSet(
+                (bottomSheet!!.parent as View).height,
+                bottomSheetBehavior!!.peekHeight,
+                bottomSheet!!.top
+            )
+        )
     }
-
 
 
     private fun adjustMapForBottomSheet(slideOffset: Float) {
@@ -77,6 +105,37 @@ class RideRequestedSheet : Fragment(R.layout.fragment_ride_requested_sheet) {
         sharedViewModel.setRideOptionsSheetOffsetAndBounds(mapPaddingBottom, bounds!!)
     }
 
+    private fun setInterval() {
+        var index = 0
+        if(isAdded) {
+            Timer().schedule(object : TimerTask() {
+                override fun run() {
+                    if (index < images.size) {
+                        Handler(Looper.getMainLooper()).post {
+                            binding?.ivRideRequestImage?.let {
+
+                                if(isAdded) {
+                                    Glide.with(this@RideRequestedSheet)
+                                        .load(images[index])
+                                        .transition(DrawableTransitionOptions.withCrossFade(500))
+                                        .into(it)
+                                    views[index]?.setBackgroundColor(
+                                        ContextCompat.getColor(
+                                            requireContext(),
+                                            R.color.royal_blue
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                        index += 1;
+                    }
+                    if (index == images.size) index = 0
+                }
+            }, 0, 2000)
+        }
+    }
+
 
     override fun onDestroyView() {
         super.onDestroyView()
@@ -84,5 +143,7 @@ class RideRequestedSheet : Fragment(R.layout.fragment_ride_requested_sheet) {
         bottomSheet = null
         bottomSheetBehavior = null
     }
+
+
 
 }

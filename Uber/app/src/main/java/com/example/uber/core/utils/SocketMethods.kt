@@ -8,4 +8,5 @@ object SocketMethods {
     const val TRIP_UPDATES = "TripUpdates"
     const val DRIVER_REACHED_PICKUP_SPOT = "DriverReachedPickUpSpot"
     const val DRIVER_REACHED_DROPOFF_SPOT = "DriverReachedDropOffSpot"
+    const val TRIP_STARTED = "TripStarted"
 }

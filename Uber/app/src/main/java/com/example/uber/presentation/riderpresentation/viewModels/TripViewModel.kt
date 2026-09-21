@@ -7,16 +7,20 @@ import com.example.uber.core.common.Resource
 import com.example.uber.data.remote.api.backend.rider.socket.ride.model.TripLocation
 import com.example.uber.data.remote.api.backend.rider.socket.trip.model.DriverReachedDropOffSpot
 import com.example.uber.data.remote.api.backend.rider.socket.trip.model.DriverReachedPickUpSpot
+import com.example.uber.data.remote.api.backend.rider.socket.trip.model.TripStarted
 import com.example.uber.data.remote.api.googleMaps.models.directionsResponse.DirectionsResponse
 import com.example.uber.domain.remote.google.usecase.GoogleUseCase
 import com.example.uber.domain.remote.socket.trip.usecase.DriverReachedDropOffSpotUseCase
 import com.example.uber.domain.remote.socket.trip.usecase.DriverReachedPickUpSpotUseCase
 import com.example.uber.domain.remote.socket.trip.usecase.ObserveTripLocationsUseCase
+import com.example.uber.domain.remote.socket.trip.usecase.TripStartedUseCase
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import retrofit2.Response
 import javax.inject.Inject
@@ -27,13 +31,24 @@ class TripViewModel @Inject constructor(
     private val googleUseCase: GoogleUseCase,
     private val observeTripLocationsUseCase: ObserveTripLocationsUseCase,
     private val driverReachedPickUpSpotUseCase: DriverReachedPickUpSpotUseCase,
-    private val driverReachedDropOffSpotUseCase: DriverReachedDropOffSpotUseCase
+    private val driverReachedDropOffSpotUseCase: DriverReachedDropOffSpotUseCase,
+    private val tripStartedUseCase: TripStartedUseCase
     ) : BaseViewModel(dispatcher) {
     private val _directions = MutableSharedFlow<Resource<DirectionsResponse>?>()
     val directions get() = _directions.asSharedFlow()
 
+    private val _tripStarted = MutableSharedFlow<Resource<TripStarted>>()
+    val tripStarted get() = _tripStarted.asSharedFlow()
+
     private val tripLocation = MutableSharedFlow<TripLocation>()
     val tripUpdates get() = tripLocation.asSharedFlow()
+
+    private var pickUpLocation:LatLng? = null
+    val pickUp get() = pickUpLocation
+
+    private var dropOffLocation:LatLng?= null
+    val dropOff get() = dropOffLocation
+
 
 
     private fun <T> handleResponse(response: Response<T>): Resource<T>? {
@@ -71,5 +86,16 @@ class TripViewModel @Inject constructor(
         return driverReachedDropOffSpotUseCase()
     }
 
+    suspend fun tripStarted():Flow<TripStarted>{
+        return tripStartedUseCase()
+    }
+
+    suspend fun setPickUpLocation(latLng: LatLng){
+        pickUpLocation = latLng
+    }
+
+    suspend fun setDropOffLocation(latLng: LatLng){
+        dropOffLocation = latLng
+    }
 
 }

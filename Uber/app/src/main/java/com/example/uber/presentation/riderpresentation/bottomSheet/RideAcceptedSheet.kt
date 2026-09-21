@@ -31,6 +31,8 @@ class RideAcceptedSheet : Fragment(R.layout.fragment_ride_accepted_sheet) {
     private var bottomSheetBehavior: BottomSheetBehavior<View>? = null
     private val tripViewModel:TripViewModel by activityViewModels<TripViewModel>()
     private var binding:FragmentRideAcceptedSheetBinding? = null
+    private var _bottomSheet: GenericBottomSheet? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
     }
@@ -57,6 +59,7 @@ class RideAcceptedSheet : Fragment(R.layout.fragment_ride_accepted_sheet) {
         handleBackPressed()
         observeTimeAndDistanceFromTrip()
         observeDriverReachedPickup()
+        observeReachedDropOffSpot()
     }
 
     private var bounds: LatLngBounds? = null
@@ -131,5 +134,20 @@ class RideAcceptedSheet : Fragment(R.layout.fragment_ride_accepted_sheet) {
         bottomSheet = null
         bottomSheetBehavior = null
         binding = null
+    }
+
+    private fun showPaymentSheet(){
+        val customView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.pay_you_driver_content, null)
+        _bottomSheet = GenericBottomSheet.newInstance(customView)
+        _bottomSheet?.show(parentFragmentManager, _bottomSheet?.tag)
+    }
+
+    private fun observeReachedDropOffSpot(){
+        viewLifecycleOwner.lifecycleScope.launch {
+            tripViewModel.driverReachedDropOffSpot().collectLatest {
+                showPaymentSheet()
+            }
+        }
     }
 }

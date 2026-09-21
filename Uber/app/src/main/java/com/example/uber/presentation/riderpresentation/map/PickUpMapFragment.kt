@@ -110,7 +110,7 @@ class PickUpMapFragment : Fragment(), IActions, OnMapReadyCallback,
     }
 
     private fun showUserLocation() {
-        checkLocationPermission(null) {
+        checkLocationPermission() {
             FetchLocation.getCurrentLocation(this@PickUpMapFragment, requireContext()) { location ->
                 currentLocation = location
                 animateCameraToCurrentLocation(location)
@@ -119,7 +119,7 @@ class PickUpMapFragment : Fragment(), IActions, OnMapReadyCallback,
     }
 
     private fun requestLocationPermission() {
-        checkLocationPermission("Need Access to Location") {
+        checkLocationPermission {
             showUserLocation()
         }
     }
@@ -140,7 +140,7 @@ class PickUpMapFragment : Fragment(), IActions, OnMapReadyCallback,
     }
 
     private fun enableMyLocation() {
-        checkLocationPermission(null) {
+        checkLocationPermission() {
             googleMap.isMyLocationEnabled = true
             googleMap.uiSettings.isMyLocationButtonEnabled = false
         }
@@ -263,7 +263,7 @@ class PickUpMapFragment : Fragment(), IActions, OnMapReadyCallback,
         if (CheckMode.isDarkMode(requireContext())) R.raw.night_map else R.raw.uber_style
 
 
-    private fun checkLocationPermission(rationale: String?, onGranted: () -> Unit) {
+    private fun checkLocationPermission( onGranted: () -> Unit) {
         PermissionManagers.requestPermission(
             requireContext(),
             Manifest.permission.ACCESS_FINE_LOCATION
@@ -364,7 +364,7 @@ class PickUpMapFragment : Fragment(), IActions, OnMapReadyCallback,
     }
 
     private fun getInitialPickUpLocation() {
-        checkLocationPermission(null) {
+        checkLocationPermission() {
             FetchLocation.getCurrentLocation(
                 this@PickUpMapFragment,
                 requireContext()
@@ -573,10 +573,10 @@ class PickUpMapFragment : Fragment(), IActions, OnMapReadyCallback,
                 it?.let {a->
                     sharedViewModel.setCurrentOpenedSheet(SheetState.RIDE_ACCEPTED)
                     routeHelper?.deleteEveryThingOnMap()
+                    tripViewModel.setPickUpLocation(LatLng(googleViewModel.pickUpLatitude,googleViewModel.pickUpLongitude))
+                    tripViewModel.setDropOffLocation(LatLng(googleViewModel.dropOffLatitude,googleViewModel.dropOffLongitude))
                     startTrip(a)
-
                 }
-
             }
         }
     }
@@ -606,6 +606,16 @@ class PickUpMapFragment : Fragment(), IActions, OnMapReadyCallback,
                     LatLng(it.latitude, it.longitude),
                     LatLng(r.latitude, r.longitude)
                 )
+            }
+        }
+    }
+
+    private fun getContinuousLocationUpdates(){
+        checkLocationPermission {
+            viewLifecycleOwner.lifecycleScope.launch {
+                FetchLocation.getLocationUpdates(requireContext()).collect {
+                    animateCameraToCurrentLocation(it)
+                }
             }
         }
     }
